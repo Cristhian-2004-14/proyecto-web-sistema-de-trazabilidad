@@ -1,0 +1,10 @@
+@page "/receptions"
+@attribute [Authorize(Roles = "Administrador,Almacén,Producción,Gerencia")]
+@inject HttpClient Http
+<PageTitle>Recepciones | Palma Verde</PageTitle>
+<header class="page-heading"><div><p class="eyebrow">Sprint 2 · Almacén</p><h1>Recepciones</h1><p>Ingresos de materia prima registrados con responsable y proveedor.</p></div><AuthorizeView Roles="Administrador,Almacén"><Authorized><a class="btn btn-primary" href="receptions/new">Nueva recepción</a></Authorized></AuthorizeView></header>
+<section class="data-panel"><table class="table"><thead><tr><th>Número</th><th>Fecha</th><th>Proveedor</th><th>Responsable</th><th>Estado</th><th></th></tr></thead><tbody>
+@if(items.Count==0){<tr><td colspan="6" class="muted">No existen recepciones registradas.</td></tr>}
+@foreach(var x in items){<tr><td><strong>#@x.Id</strong></td><td>@x.Date.ToString("dd/MM/yyyy HH:mm")</td><td>@x.SupplierName</td><td>@x.Username</td><td><span class="status-chip">@x.Status</span></td><td><a class="btn-link-action" href="receptions/@x.Id">Ver detalle</a></td></tr>}
+</tbody></table></section>
+@code { List<ReceptionResponse> items=[]; protected override async Task OnInitializedAsync()=>items=await Http.GetFromJsonAsync<List<ReceptionResponse>>("api/receptions")??[]; }

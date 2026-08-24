@@ -1,0 +1,31 @@
+@inject TokenAuthenticationStateProvider Auth
+@inject NavigationManager Navigation
+<div class="sidebar-inner">
+<div class="nav-brand">
+    <div class="brand-mark small"><span>PV</span></div>
+    <div class="brand-copy"><strong>Palma Verde</strong><small>Control interno</small></div>
+</div>
+<nav class="main-nav" aria-label="Navegación principal">
+    <NavLink href="" Match="NavLinkMatch.All" title="Panel principal"><span class="nav-icon">⌂</span><span class="nav-text">Inicio</span></NavLink>
+    <AuthorizeView Roles="Administrador"><Authorized>
+        <p class="nav-label">Administración</p>
+        <NavLink href="users" title="Usuarios"><span class="nav-icon">U</span><span class="nav-text">Usuarios</span></NavLink>
+        <NavLink href="roles" title="Roles"><span class="nav-icon">R</span><span class="nav-text">Roles</span></NavLink>
+        <NavLink href="suppliers" title="Proveedores"><span class="nav-icon">P</span><span class="nav-text">Proveedores</span></NavLink>
+        <NavLink href="raw-materials" title="Materias primas"><span class="nav-icon">M</span><span class="nav-text">Materias primas</span></NavLink>
+    </Authorized></AuthorizeView>
+    <AuthorizeView Roles="Administrador,Almacén,Producción,Gerencia"><Authorized>
+        <p class="nav-label">Inventario</p>
+        <NavLink href="inventory" title="Inventario"><span class="nav-icon">I</span><span class="nav-text">Inventario</span></NavLink>
+        <NavLink href="products" title="Productos"><span class="nav-icon">T</span><span class="nav-text">Productos</span></NavLink>
+        <NavLink href="receptions" title="Recepciones"><span class="nav-icon">E</span><span class="nav-text">Recepciones</span></NavLink>
+        <NavLink href="production-lots" title="Lotes de producción"><span class="nav-icon">L</span><span class="nav-text">Producción</span></NavLink>
+        <NavLink href="dispatches" title="Despachos"><span class="nav-icon">D</span><span class="nav-text">Despachos</span></NavLink>
+        <NavLink href="inventory-movements" title="Movimientos"><span class="nav-icon">V</span><span class="nav-text">Movimientos</span></NavLink>
+        <NavLink href="traceability" title="Trazabilidad"><span class="nav-icon">Z</span><span class="nav-text">Trazabilidad</span></NavLink>
+    </Authorized></AuthorizeView>
+    <AuthorizeView Roles="Administrador,Almacén,Producción,Gerencia"><Authorized><NavLink href="reports" title="Reportes"><span class="nav-icon">G</span><span class="nav-text">Reportes</span></NavLink></Authorized></AuthorizeView>
+</nav>
+<button class="logout" @onclick="Logout" title="Cerrar sesión"><span class="logout-icon">↪</span><span class="nav-text">Cerrar sesión</span></button>
+</div>
+@code { private async Task Logout(){await Auth.SetTokenAsync(null);Navigation.NavigateTo("login");} }

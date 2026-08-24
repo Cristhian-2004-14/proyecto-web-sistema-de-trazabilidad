@@ -1,0 +1,22 @@
+@page "/receptions/new"
+@attribute [Authorize(Roles = "Administrador,Almacén")]
+@inject HttpClient Http
+@inject NavigationManager Navigation
+<PageTitle>Nueva recepción | Palma Verde</PageTitle>
+<header class="page-heading"><div><p class="eyebrow">Entrada de inventario</p><h1>Nueva recepción</h1><p>La confirmación incrementará el stock dentro de una transacción.</p></div><a class="btn btn-light" href="receptions">Volver</a></header>
+@if(!string.IsNullOrWhiteSpace(error)){<div class="alert alert-danger">@error</div>}
+<div class="reception-layout"><section class="form-panel reception-form"><EditForm Model="model" OnValidSubmit="Save"><DataAnnotationsValidator /><ValidationSummary />
+<div class="form-row"><div class="field"><label>Proveedor</label><InputSelect class="form-select" @bind-Value="model.SupplierId"><option value="0">Seleccionar proveedor</option>@foreach(var x in suppliers.Where(x=>x.IsActive)){<option value="@x.Id">@x.Name</option>}</InputSelect></div><div class="field"><label>Fecha</label><InputDate class="form-control" @bind-Value="model.Date" /></div></div>
+<div class="field"><label>Observación</label><InputTextArea class="form-control" @bind-Value="model.Observation" /></div>
+<div class="detail-builder"><div class="field"><label>Materia prima</label><select class="form-select" @bind="selectedMaterialId"><option value="0">Seleccionar materia prima</option>@foreach(var x in materials.Where(x=>x.IsActive)){<option value="@x.Id">@x.Name (@x.UnitOfMeasure)</option>}</select></div><div class="field"><label>Cantidad</label><input class="form-control" type="number" min="0.01" step="0.01" @bind="quantity" /></div><button type="button" class="btn btn-light" @onclick="AddDetail">Agregar</button></div>
+<h2>Detalle</h2><table class="table detail-table"><thead><tr><th>Materia prima</th><th>Cantidad</th><th></th></tr></thead><tbody>@if(model.Details.Count==0){<tr><td colspan="3" class="muted">Agregue al menos una materia prima.</td></tr>}@foreach(var d in model.Details){var material=materials.FirstOrDefault(x=>x.Id==d.RawMaterialId);<tr><td>@material?.Name</td><td>@d.Quantity.ToString("N2") @material?.UnitOfMeasure</td><td><button type="button" class="btn-link-action" @onclick="()=>RemoveDetail(d)">Eliminar</button></td></tr>}</tbody></table>
+<button class="btn btn-primary" disabled="@saving">@(saving?"Registrando...":"Registrar recepción")</button>
+</EditForm></section></div>
+@code {
+ CreateReceptionRequest model=new(){Date=DateTime.Today,Status="Confirmada"}; List<Supplier> suppliers=[]; List<RawMaterialInventoryResponse> materials=[]; int selectedMaterialId; decimal quantity; string error=""; bool saving;
+ protected override async Task OnInitializedAsync(){suppliers=await Http.GetFromJsonAsync<List<Supplier>>("api/suppliers")??[];materials=await Http.GetFromJsonAsync<List<RawMaterialInventoryResponse>>("api/inventory/raw-materials?isActive=true")??[];}
+ void AddDetail(){error="";if(selectedMaterialId<=0||quantity<=0){error="Seleccione una materia prima e ingrese una cantidad mayor que cero.";return;}if(model.Details.Any(x=>x.RawMaterialId==selectedMaterialId)){error="La materia prima ya fue agregada.";return;}model.Details.Add(new(){RawMaterialId=selectedMaterialId,Quantity=quantity});selectedMaterialId=0;quantity=0;}
+ void RemoveDetail(ReceptionDetailRequest d)=>model.Details.Remove(d);
+ async Task Save(){error="";if(model.Details.Count==0){error="Debe agregar al menos una materia prima.";return;}saving=true;var response=await Http.PostAsJsonAsync("api/receptions",model);saving=false;if(response.IsSuccessStatusCode){var created=await response.Content.ReadFromJsonAsync<ReceptionResponse>();Navigation.NavigateTo($"receptions/{created!.Id}");return;}try{var body=await response.Content.ReadFromJsonAsync<ApiError>();error=body?.Message??"No fue posible registrar la recepción.";}catch{error="No fue posible registrar la recepción.";}}
+ sealed class ApiError{public string Message{get;set;}="";}
+}

@@ -1,0 +1,23 @@
+@page "/production-lots/{Id:int}"
+@attribute [Authorize(Roles = "Administrador,Almacén,Producción,Gerencia")]
+@inject HttpClient Http
+<PageTitle>Detalle de lote | Palma Verde</PageTitle>
+@if(!string.IsNullOrWhiteSpace(error)){<div class="alert alert-danger">@error</div>}
+@if(item is null){<p>Cargando lote...</p>}else{
+<header class="page-heading"><div><p class="eyebrow">Lote @item.Code</p><h1>@item.ProductName</h1><p>Responsable: @item.Username · Inicio: @item.StartDate.ToString("dd/MM/yyyy")</p></div><span class="status-chip">@item.Status</span></header>
+<div class="lot-summary"><div><small>Planificado</small><strong>@item.PlannedQuantity.ToString("N2") @item.ProductUnitOfMeasure</strong></div><div><small>Producido</small><strong>@item.ProducedQuantity.ToString("N2") @item.ProductUnitOfMeasure</strong></div><div><small>Finalización</small><strong>@(item.EndDate?.ToString("dd/MM/yyyy HH:mm")??"—")</strong></div></div>
+<section class="data-panel"><table class="table"><thead><tr><th>Materia prima</th><th>Unidad</th><th>Cantidad utilizada</th></tr></thead><tbody>@if(item.Materials.Count==0){<tr><td colspan="3" class="muted">El lote todavía no registra consumo.</td></tr>}@foreach(var d in item.Materials){<tr><td><strong>@d.RawMaterialName</strong></td><td>@d.UnitOfMeasure</td><td>@d.QuantityUsed.ToString("N2")</td></tr>}</tbody></table></section>
+<AuthorizeView Roles="Administrador,Producción"><Authorized>
+@if(item.Status==ProductionLotStatuses.Pending){<section class="form-panel lot-action"><h2>Registrar consumo</h2><div class="detail-builder"><div class="field"><label>Materia prima</label><select class="form-select" @bind="selectedMaterialId"><option value="0">Seleccionar</option>@foreach(var x in materials.Where(x=>x.IsActive)){<option value="@x.Id">@x.Name · disponible @x.CurrentStock.ToString("N2") @x.UnitOfMeasure</option>}</select></div><div class="field"><label>Cantidad</label><input class="form-control" type="number" min="0.01" step="0.01" @bind="quantity"/></div><button type="button" class="btn btn-light" @onclick="AddMaterial">Agregar</button></div>
+<table class="table"><tbody>@foreach(var d in consumption.Items){var m=materials.FirstOrDefault(x=>x.Id==d.RawMaterialId);<tr><td>@m?.Name</td><td>@d.Quantity.ToString("N2") @m?.UnitOfMeasure</td><td><button class="btn-link-action" @onclick="()=>consumption.Items.Remove(d)">Eliminar</button></td></tr>}</tbody></table><button class="btn btn-primary" disabled="@saving" @onclick="Consume">Confirmar consumo</button></section>}
+@if(item.Status==ProductionLotStatuses.InProgress){<section class="form-panel lot-action"><h2>Finalizar lote</h2><div class="field"><label>Cantidad producida</label><input class="form-control" type="number" min="0.01" step="0.01" @bind="finish.ProducedQuantity"/></div><button class="btn btn-primary" disabled="@saving" @onclick="Finish">Finalizar lote</button></section>}
+</Authorized></AuthorizeView><a class="btn btn-light mt-3" href="production-lots">Volver a lotes</a>}
+@code {
+ [Parameter] public int Id{get;set;} ProductionLotResponse? item; List<RawMaterialInventoryResponse> materials=[]; MaterialConsumptionRequest consumption=new(); FinishProductionLotRequest finish=new(); int selectedMaterialId; decimal quantity; string error=""; bool saving;
+ protected override async Task OnParametersSetAsync(){item=await Http.GetFromJsonAsync<ProductionLotResponse>($"api/production-lots/{Id}");materials=await Http.GetFromJsonAsync<List<RawMaterialInventoryResponse>>("api/inventory/raw-materials?isActive=true")??[];}
+ void AddMaterial(){error="";var m=materials.FirstOrDefault(x=>x.Id==selectedMaterialId);if(m is null||quantity<=0||quantity>m.CurrentStock){error="Seleccione una materia prima e ingrese una cantidad válida que no supere el stock.";return;}if(consumption.Items.Any(x=>x.RawMaterialId==selectedMaterialId)){error="La materia prima ya fue agregada.";return;}consumption.Items.Add(new(){RawMaterialId=selectedMaterialId,Quantity=quantity});selectedMaterialId=0;quantity=0;}
+ async Task Consume(){if(consumption.Items.Count==0){error="Agregue al menos una materia prima.";return;}await Send($"api/production-lots/{Id}/consume",consumption);}
+ async Task Finish(){await Send($"api/production-lots/{Id}/finish",finish);}
+ async Task Send<T>(string url,T body){saving=true;error="";var response=await Http.PostAsJsonAsync(url,body);saving=false;if(response.IsSuccessStatusCode){item=await response.Content.ReadFromJsonAsync<ProductionLotResponse>();return;}try{error=(await response.Content.ReadFromJsonAsync<ApiError>())?.Message??"No fue posible completar la operación.";}catch{error="No fue posible completar la operación.";}}
+ sealed class ApiError{public string Message{get;set;}="";}
+}

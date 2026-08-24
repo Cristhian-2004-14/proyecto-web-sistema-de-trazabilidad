@@ -1,0 +1,6 @@
+@page "/dispatches/{Id:int}"
+@attribute [Authorize(Roles="Administrador,Almacén,Producción,Gerencia")]
+@inject HttpClient Http
+<PageTitle>Detalle de despacho | Palma Verde</PageTitle>
+@if(item is null){<p>Cargando...</p>}else{<header class="page-heading"><div><p class="eyebrow">Despacho #@item.Id</p><h1>@item.Destination</h1><p>@item.Date.ToString("dd/MM/yyyy HH:mm") · @item.Username</p></div><span class="status-chip">@item.Status</span></header><section class="data-panel"><table class="table"><thead><tr><th>Producto</th><th>Unidad</th><th>Cantidad</th></tr></thead><tbody>@foreach(var d in item.Details){<tr><td>@d.ProductName</td><td>@d.UnitOfMeasure</td><td>@d.Quantity.ToString("N2")</td></tr>}</tbody></table></section><div class="reception-note"><strong>Observación</strong><p>@(item.Observation==""?"Sin observaciones":item.Observation)</p></div><a class="btn btn-light" href="dispatches">Volver</a>}
+@code{[Parameter]public int Id{get;set;}DispatchResponse?item;protected override async Task OnParametersSetAsync()=>item=await Http.GetFromJsonAsync<DispatchResponse>($"api/dispatches/{Id}");}

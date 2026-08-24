@@ -1,0 +1,2 @@
+@inherits LayoutComponentBase
+<div class="app-shell"><aside class="sidebar"><NavMenu /></aside><main class="main-stage"><header class="topbar"><div><span class="topbar-kicker">Palma Verde S.A.</span><span class="topbar-title">Trazabilidad logística e inventarios</span></div><AuthorizeView><Authorized Context="auth"><span class="user-pill">@auth.User.Identity?.Name · @auth.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</span></Authorized></AuthorizeView></header><article class="content">@Body</article></main></div>

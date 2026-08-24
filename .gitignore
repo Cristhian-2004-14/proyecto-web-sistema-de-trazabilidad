@@ -1,0 +1,23 @@
+# .NET build output
+**/bin/
+**/obj/
+
+# Visual Studio / user-specific files
+.vs/
+*.user
+*.suo
+
+# Test and coverage output
+TestResults/
+coverage/
+
+# Local logs and temporary files
+*.log
+*.tmp
+~$*
+
+# Local archive duplicate
+POS.rar
+
+# Copia local antigua de la solución; la versión oficial está en POS/
+POS_2/

@@ -1,0 +1,8 @@
+@page "/inventory"
+@attribute [Authorize(Roles = "Administrador,Almacén,Producción,Gerencia")]
+@inject HttpClient Http
+<PageTitle>Inventario | Palma Verde</PageTitle>
+<header class="page-heading"><div><p class="eyebrow">Consulta sin edición</p><h1>Inventario de materia prima</h1><p>Existencias actualizadas exclusivamente mediante operaciones de negocio.</p></div></header>
+<div class="inventory-filters"><input class="form-control" placeholder="Buscar por nombre" @bind="search" @bind:event="oninput" /><select class="form-select" @bind="state"><option value="">Todos los estados</option><option value="active">Activos</option><option value="inactive">Inactivos</option></select></div>
+<section class="data-panel"><table class="table"><thead><tr><th>Materia prima</th><th>Unidad</th><th>Stock actual</th><th>Stock mínimo</th><th>Estado</th><th>Alerta</th></tr></thead><tbody>@foreach(var x in Filtered){<tr class="@(x.IsLowStock?"stock-alert":"")"><td><strong>@x.Name</strong></td><td>@x.UnitOfMeasure</td><td>@x.CurrentStock.ToString("N2")</td><td>@x.MinimumStock.ToString("N2")</td><td><span class="status-chip @(x.IsActive?"":"off")">@(x.IsActive?"Activo":"Inactivo")</span></td><td>@if(x.IsLowStock){<span class="low-stock-badge">STOCK BAJO</span>}</td></tr>}</tbody></table></section>
+@code { List<RawMaterialInventoryResponse> items=[]; string search="",state=""; IEnumerable<RawMaterialInventoryResponse> Filtered=>items.Where(x=>(string.IsNullOrWhiteSpace(search)||x.Name.Contains(search,StringComparison.OrdinalIgnoreCase))&&(state==""||(state=="active"?x.IsActive:!x.IsActive))); protected override async Task OnInitializedAsync()=>items=await Http.GetFromJsonAsync<List<RawMaterialInventoryResponse>>("api/inventory/raw-materials")??[]; }

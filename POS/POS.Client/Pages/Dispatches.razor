@@ -1,0 +1,7 @@
+@page "/dispatches"
+@attribute [Authorize(Roles="Administrador,Almacén,Producción,Gerencia")]
+@inject HttpClient Http
+<PageTitle>Despachos | Palma Verde</PageTitle>
+<header class="page-heading"><div><p class="eyebrow">Sprint 4 · Distribución</p><h1>Despachos</h1><p>Salidas confirmadas de producto terminado.</p></div><AuthorizeView Roles="Administrador,Almacén"><Authorized><a class="btn btn-primary" href="dispatches/new">Nuevo despacho</a></Authorized></AuthorizeView></header>
+<section class="data-panel"><table class="table"><thead><tr><th>Número</th><th>Fecha</th><th>Destino</th><th>Responsable</th><th>Estado</th><th></th></tr></thead><tbody>@if(items.Count==0){<tr><td colspan="6" class="muted">No existen despachos.</td></tr>}@foreach(var x in items){<tr><td>#@x.Id</td><td>@x.Date.ToString("dd/MM/yyyy HH:mm")</td><td>@x.Destination</td><td>@x.Username</td><td><span class="status-chip">@x.Status</span></td><td><a class="btn-link-action" href="dispatches/@x.Id">Detalle</a></td></tr>}</tbody></table></section>
+@code{List<DispatchResponse>items=[];protected override async Task OnInitializedAsync()=>items=await Http.GetFromJsonAsync<List<DispatchResponse>>("api/dispatches")??[];}

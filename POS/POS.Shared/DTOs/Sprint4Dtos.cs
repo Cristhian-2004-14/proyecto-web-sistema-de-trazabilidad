@@ -1,0 +1,15 @@
+using System.ComponentModel.DataAnnotations;
+namespace POS.Shared.DTOs;
+public class DispatchDetailRequest { [Range(1,int.MaxValue)] public int ProductId{get;set;} [Range(.01,double.MaxValue)] public decimal Quantity{get;set;} }
+public class CreateDispatchRequest:IValidatableObject
+{
+ public DateTime Date{get;set;}=DateTime.Now; [Required,MaxLength(150)] public string Destination{get;set;}=""; [MaxLength(300)] public string Observation{get;set;}=""; [MinLength(1)] public List<DispatchDetailRequest> Details{get;set;}=[];
+ public IEnumerable<ValidationResult> Validate(ValidationContext c){if(Date==default)yield return new("La fecha es obligatoria.",[nameof(Date)]);if(Details.Count==0)yield return new("Debe agregar al menos un producto.",[nameof(Details)]);if(Details.GroupBy(x=>x.ProductId).Any(x=>x.Count()>1))yield return new("No se permiten productos duplicados.",[nameof(Details)]);}
+}
+public class DispatchDetailResponse { public int Id{get;set;} public int ProductId{get;set;} public string ProductName{get;set;}=""; public string UnitOfMeasure{get;set;}=""; public decimal Quantity{get;set;} }
+public class DispatchResponse { public int Id{get;set;} public int UserId{get;set;} public string Username{get;set;}=""; public DateTime Date{get;set;} public string Destination{get;set;}=""; public string Observation{get;set;}=""; public string Status{get;set;}=""; public List<DispatchDetailResponse> Details{get;set;}=[]; }
+public class InventoryMovementResponse { public int Id{get;set;} public int ProductId{get;set;} public string ProductName{get;set;}=""; public int UserId{get;set;} public string Username{get;set;}=""; public string MovementType{get;set;}=""; public decimal Quantity{get;set;} public DateTime Date{get;set;} public string Reference{get;set;}=""; }
+public class LotTraceabilityResponse { public ProductionLotResponse Lot{get;set;}=new(); public List<InventoryMovementResponse> Movements{get;set;}=[]; public string ReceptionOriginLimitation{get;set;}="El modelo actual no vincula el consumo del lote con una recepción específica; solo permite consultar las materias primas utilizadas."; }
+public class ProductionReportRow { public string Code{get;set;}=""; public string ProductName{get;set;}=""; public DateTime StartDate{get;set;} public DateTime? EndDate{get;set;} public decimal PlannedQuantity{get;set;} public decimal ProducedQuantity{get;set;} public string Status{get;set;}=""; }
+public class InventoryReportRow { public int Id{get;set;} public string ItemType{get;set;}=""; public string Name{get;set;}=""; public string UnitOfMeasure{get;set;}=""; public decimal CurrentStock{get;set;} public decimal MinimumStock{get;set;} public bool IsActive{get;set;} public bool IsLowStock=>CurrentStock<=MinimumStock; }
+public class DispatchReportRow { public int DispatchId{get;set;} public DateTime Date{get;set;} public string Destination{get;set;}=""; public string Username{get;set;}=""; public string ProductName{get;set;}=""; public decimal Quantity{get;set;} public string Status{get;set;}=""; }

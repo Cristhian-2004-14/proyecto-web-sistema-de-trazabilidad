@@ -1,0 +1,55 @@
+@page "/users"
+@attribute [Authorize(Roles = "Administrador")]
+@inject HttpClient Http
+
+<PageTitle>Usuarios | Palma Verde</PageTitle>
+<header class="page-heading">
+    <div><p class="eyebrow">Control de acceso</p><h1>Usuarios</h1><p>Cuentas habilitadas y responsabilidad asignada.</p></div>
+    <button class="btn btn-primary" @onclick="New">Nuevo usuario</button>
+</header>
+<div class="workspace-grid">
+    <section class="data-panel">
+        <table class="table"><thead><tr><th>Persona</th><th>Usuario</th><th>Rol</th><th>Estado</th><th></th></tr></thead><tbody>
+            @foreach (var item in items)
+            {
+                <tr><td><strong>@item.Name @item.LastName</strong><small>@item.Email</small></td><td>@item.Username</td><td>@item.RoleName</td><td><span class="status-chip @(item.IsActive ? "" : "off")">@(item.IsActive ? "Activo" : "Inactivo")</span></td><td><button class="btn-link-action" @onclick="() => Edit(item)">Editar</button></td></tr>
+            }
+        </tbody></table>
+    </section>
+    <aside class="form-panel">
+        <h2>@(editingId == 0 ? "Nuevo usuario" : "Editar usuario")</h2>
+        <EditForm Model="form" OnValidSubmit="Save"><DataAnnotationsValidator />
+            <div class="form-row"><div class="field"><label>Nombre</label><InputText class="form-control" @bind-Value="form.Name" /></div><div class="field"><label>Apellido</label><InputText class="form-control" @bind-Value="form.LastName" /></div></div>
+            <div class="field"><label>Usuario</label><InputText class="form-control" @bind-Value="form.Username" /></div>
+            <div class="field"><label>Correo</label><InputText class="form-control" @bind-Value="form.Email" /></div>
+            <div class="field"><label>Rol activo</label><InputSelect class="form-select" @bind-Value="form.RoleId"><option value="0">Selecciona un rol</option>@foreach (var role in roles) { <option value="@role.Id">@role.Name</option> }</InputSelect></div>
+            <div class="field"><label>@(editingId == 0 ? "Contraseña" : "Nueva contraseña (opcional)")</label><InputText type="password" class="form-control" @bind-Value="password" /></div>
+            <div class="form-check"><InputCheckbox class="form-check-input" @bind-Value="form.IsActive" /><label>Cuenta activa</label></div>
+            @if (error is not null) { <div class="alert alert-danger">@error</div> }
+            <button class="btn btn-primary">Guardar cambios</button>
+        </EditForm>
+    </aside>
+</div>
+
+@code {
+    private List<UserResponse> items = [];
+    private List<RoleEntity> roles = [];
+    private UserUpdateRequest form = new() { IsActive = true };
+    private int editingId;
+    private string password = string.Empty;
+    private string? error;
+
+    protected override async Task OnInitializedAsync() { await LoadRoles(); await Load(); }
+    private async Task Load() => items = await Http.GetFromJsonAsync<List<UserResponse>>("api/users") ?? [];
+    private async Task LoadRoles() => roles = await Http.GetFromJsonAsync<List<RoleEntity>>("api/roles/active") ?? [];
+    private void New() { editingId = 0; form = new() { IsActive = true }; password = string.Empty; error = null; }
+    private void Edit(UserResponse item) { editingId = item.Id; form = new() { Name = item.Name, LastName = item.LastName, Username = item.Username, Email = item.Email, RoleId = item.RoleId, IsActive = item.IsActive }; password = string.Empty; error = null; }
+    private async Task Save()
+    {
+        HttpResponseMessage response;
+        if (editingId == 0) response = await Http.PostAsJsonAsync("api/users", new RegisterRequest { Name = form.Name, LastName = form.LastName, Username = form.Username, Email = form.Email, RoleId = form.RoleId, Password = password, IsActive = form.IsActive });
+        else { form.NewPassword = string.IsNullOrWhiteSpace(password) ? null : password; response = await Http.PutAsJsonAsync($"api/users/{editingId}", form); }
+        if (response.IsSuccessStatusCode) { New(); await Load(); }
+        else error = "No se pudo guardar. Verifica campos, contraseña, rol activo y datos duplicados.";
+    }
+}

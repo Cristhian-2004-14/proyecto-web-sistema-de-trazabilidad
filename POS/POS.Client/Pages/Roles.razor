@@ -1,0 +1,31 @@
+@page "/roles"
+@attribute [Authorize(Roles = "Administrador")]
+@inject HttpClient Http
+
+<PageTitle>Roles | Palma Verde</PageTitle>
+<header class="page-heading"><div><p class="eyebrow">Seguridad</p><h1>Roles</h1><p>Define el propósito y vigencia de cada perfil de acceso.</p></div></header>
+<div class="workspace-grid">
+    <section class="data-panel"><table class="table"><thead><tr><th>Rol</th><th>Descripción</th><th>Estado</th><th></th></tr></thead><tbody>
+        @foreach (var item in items)
+        {
+            <tr><td><strong>@item.Name</strong></td><td>@item.Description</td><td><span class="status-chip @(item.IsActive ? "" : "off")">@(item.IsActive ? "Activo" : "Inactivo")</span></td><td><button class="btn-link-action" @onclick="() => Edit(item)">Editar</button> <button class="btn-link-action" @onclick="() => ChangeStatus(item)">@(item.IsActive ? "Desactivar" : "Activar")</button></td></tr>
+        }
+    </tbody></table></section>
+    <aside class="form-panel"><h2>@(model.Id == 0 ? "Nuevo rol" : "Editar rol")</h2><EditForm Model="model" OnValidSubmit="Save"><DataAnnotationsValidator />
+        <div class="field"><label>Nombre</label><InputText class="form-control" @bind-Value="model.Name" /><ValidationMessage For="@(() => model.Name)" /></div>
+        <div class="field"><label>Descripción</label><InputTextArea class="form-control" @bind-Value="model.Description" /></div>
+        <div class="form-check"><InputCheckbox class="form-check-input" @bind-Value="model.IsActive" /><label>Rol activo</label></div>
+        <button class="btn btn-primary">Guardar cambios</button> <button type="button" class="btn btn-light" @onclick="New">Limpiar</button>
+    </EditForm></aside>
+</div>
+
+@code {
+    private List<RoleEntity> items = [];
+    private RoleEntity model = new();
+    protected override async Task OnInitializedAsync() => await Load();
+    private async Task Load() => items = await Http.GetFromJsonAsync<List<RoleEntity>>("api/roles") ?? [];
+    private void Edit(RoleEntity item) => model = new() { Id = item.Id, Name = item.Name, Description = item.Description, IsActive = item.IsActive };
+    private void New() => model = new();
+    private async Task Save() { var response = model.Id == 0 ? await Http.PostAsJsonAsync("api/roles", model) : await Http.PutAsJsonAsync($"api/roles/{model.Id}", model); if (response.IsSuccessStatusCode) { New(); await Load(); } }
+    private async Task ChangeStatus(RoleEntity item) { var response = await Http.PatchAsJsonAsync($"api/roles/{item.Id}/status", new RoleStatusRequest { IsActive = !item.IsActive }); if (response.IsSuccessStatusCode) await Load(); }
+}
