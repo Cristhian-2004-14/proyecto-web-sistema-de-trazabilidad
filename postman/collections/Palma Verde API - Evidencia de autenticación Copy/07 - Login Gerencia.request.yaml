@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{baseUrl}}/api/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "username": "gerencia",
+      "password": "{{managementPassword}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Gerencia inicia sesión', () => pm.response.to.have.status(200));
+      const body = pm.response.json(); pm.collectionVariables.set('limitedToken', body.token);
+    language: text/javascript
+order: 7000

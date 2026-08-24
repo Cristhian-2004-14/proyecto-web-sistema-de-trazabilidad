@@ -1,0 +1,13 @@
+$kind: collection
+name: Palma Verde API - Evidencia de autenticación
+description: Pruebas de Login, JWT, autorización, registro y protección de PasswordHash.
+variables:
+  baseUrl: http://localhost:5216
+  token: ""
+  limitedToken: ""
+  adminPassword: ""
+  managementPassword: ""
+  testPassword: ""
+  roleId: "1"
+  testUsername: ""
+  testEmail: ""

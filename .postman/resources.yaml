@@ -2,6 +2,10 @@
 workspace:
   id: 23f10b46-ed27-488b-8872-9143b025e58c
 
+cloudResources:
+  collections:
+    ../postman/collections/Palma Verde API - Evidencia de autenticación Copy: d856a49f-0dc0-4d3f-ab82-9e09b8bbf62b
+
 # All resources in the `postman/` folder are automatically registered in Local View.
 # Point to additional files outside the `postman/` folder to register them individually. Example:
 #localResources:

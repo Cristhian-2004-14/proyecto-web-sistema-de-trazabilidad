@@ -1,0 +1,32 @@
+$kind: http-request
+url: "{{baseUrl}}/api/users"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Prueba",
+      "lastName": "Postman",
+      "username": "{{testUsername}}",
+      "email": "{{testEmail}}",
+      "password": "{{testPassword}}",
+      "roleId": {{roleId}},
+      "isActive": true
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const suffix = Date.now().toString();
+      pm.collectionVariables.set('testUsername', 'postman.' + suffix);
+      pm.collectionVariables.set('testEmail', 'postman.' + suffix + '@palmaverde.test');
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('Registro devuelve 200', () => pm.response.to.have.status(200));
+      pm.test('Respuesta no expone contraseña', () => { const text = pm.response.text().toLowerCase(); pm.expect(text).not.to.include('passwordhash'); pm.expect(text).not.to.include('password'); });
+      pm.test('JWT emitido para nuevo usuario', () => pm.expect(pm.response.json().token).to.be.a('string').and.not.empty);
+    language: text/javascript
+order: 6000

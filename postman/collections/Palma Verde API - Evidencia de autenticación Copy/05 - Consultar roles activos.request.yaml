@@ -1,0 +1,15 @@
+$kind: http-request
+url: "{{baseUrl}}/api/roles"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 200', () => pm.response.to.have.status(200));
+      const roles = pm.response.json();
+      const active = roles.find(r => r.isActive);
+      pm.test('Existe un rol activo', () => pm.expect(active).to.exist);
+      if (active) pm.collectionVariables.set('roleId', active.id);
+    language: text/javascript
+order: 5000

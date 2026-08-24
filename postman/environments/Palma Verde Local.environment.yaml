@@ -1,0 +1,12 @@
+name: Palma Verde Local
+values:
+  - key: baseUrl
+    value: 'http://localhost:5216'
+  - key: token
+    value: ''
+  - key: adminPassword
+    value: ''
+  - key: managementPassword
+    value: ''
+  - key: testPassword
+    value: ''

@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{baseUrl}}/api/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "username": "admin",
+      "password": "{{adminPassword}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 200', () => pm.response.to.have.status(200));
+      const body = pm.response.json();
+      pm.test('JWT recibido', () => pm.expect(body.token).to.be.a('string').and.not.empty);
+      pm.test('Rol Administrador', () => pm.expect(body.role).to.eql('Administrador'));
+      pm.collectionVariables.set('token', body.token);
+    language: text/javascript
+order: 1000
