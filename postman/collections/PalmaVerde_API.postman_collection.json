@@ -1,0 +1,131 @@
+{
+  "info": {
+    "name": "Palma Verde API - Evidencia de autenticación",
+    "description": "Pruebas de Login, JWT, autorización, registro y protección de PasswordHash.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5216" },
+    { "key": "token", "value": "" },
+    { "key": "limitedToken", "value": "" },
+    { "key": "adminPassword", "value": "" },
+    { "key": "managementPassword", "value": "" },
+    { "key": "testPassword", "value": "" },
+    { "key": "roleId", "value": "1" },
+    { "key": "testUsername", "value": "" },
+    { "key": "testEmail", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "01 - Login correcto Administrador",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+        "const body = pm.response.json();",
+        "pm.test('JWT recibido', () => pm.expect(body.token).to.be.a('string').and.not.empty);",
+        "pm.test('Rol Administrador', () => pm.expect(body.role).to.eql('Administrador'));",
+        "pm.collectionVariables.set('token', body.token);"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"{{adminPassword}}\"\n}" },
+        "url": "{{baseUrl}}/api/auth/login"
+      }
+    },
+    {
+      "name": "02 - Login incorrecto",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Credenciales incorrectas devuelven 401', () => pm.response.to.have.status(401));"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Incorrecta\"\n}" },
+        "url": "{{baseUrl}}/api/auth/login"
+      }
+    },
+    {
+      "name": "03 - Usuarios sin token",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Endpoint protegido devuelve 401', () => pm.response.to.have.status(401));"
+      ] } }],
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/users" }
+    },
+    {
+      "name": "04 - Usuarios con token administrador",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+        "pm.test('Lista de usuarios', () => pm.expect(pm.response.json()).to.be.an('array'));",
+        "pm.test('PasswordHash no se expone', () => { const text = pm.response.text().toLowerCase(); pm.expect(text).not.to.include('passwordhash'); pm.expect(text).not.to.include('password'); });"
+      ] } }],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }],
+        "url": "{{baseUrl}}/api/users"
+      }
+    },
+    {
+      "name": "05 - Consultar roles activos",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+        "const roles = pm.response.json();",
+        "const active = roles.find(r => r.isActive);",
+        "pm.test('Existe un rol activo', () => pm.expect(active).to.exist);",
+        "if (active) pm.collectionVariables.set('roleId', active.id);"
+      ] } }],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }],
+        "url": "{{baseUrl}}/api/roles"
+      }
+    },
+    {
+      "name": "06 - Registrar usuario con BCrypt",
+      "event": [
+        { "listen": "prerequest", "script": { "exec": [
+          "const suffix = Date.now().toString();",
+          "pm.collectionVariables.set('testUsername', 'postman.' + suffix);",
+          "pm.collectionVariables.set('testEmail', 'postman.' + suffix + '@palmaverde.test');"
+        ] } },
+        { "listen": "test", "script": { "exec": [
+          "pm.test('Registro devuelve 200', () => pm.response.to.have.status(200));",
+          "pm.test('Respuesta no expone contraseña', () => { const text = pm.response.text().toLowerCase(); pm.expect(text).not.to.include('passwordhash'); pm.expect(text).not.to.include('password'); });",
+          "pm.test('JWT emitido para nuevo usuario', () => pm.expect(pm.response.json().token).to.be.a('string').and.not.empty);"
+        ] } }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"name\": \"Prueba\",\n  \"lastName\": \"Postman\",\n  \"username\": \"{{testUsername}}\",\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"roleId\": {{roleId}},\n  \"isActive\": true\n}" },
+        "url": "{{baseUrl}}/api/users"
+      }
+    },
+    {
+      "name": "07 - Login Gerencia",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Gerencia inicia sesión', () => pm.response.to.have.status(200));",
+        "const body = pm.response.json(); pm.collectionVariables.set('limitedToken', body.token);"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"username\": \"gerencia\",\n  \"password\": \"{{managementPassword}}\"\n}" },
+        "url": "{{baseUrl}}/api/auth/login"
+      }
+    },
+    {
+      "name": "08 - Gerencia no administra usuarios",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Rol sin permiso devuelve 403', () => pm.response.to.have.status(403));"
+      ] } }],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{limitedToken}}", "type": "text" }],
+        "url": "{{baseUrl}}/api/users"
+      }
+    }
+  ]
+}
