@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using POS.Server.Data;
 
@@ -11,9 +12,11 @@ using POS.Server.Data;
 namespace POS.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260828204447_AddLotDispatchTraceability")]
+    partial class AddLotDispatchTraceability
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -377,36 +380,6 @@ namespace POS.Server.Migrations
                     b.ToTable("DETALLE_LOTE_MATERIA_PRIMA", null, t =>
                         {
                             t.HasCheckConstraint("CK_DETALLE_LOTE_MP_Cantidad", "[QuantityUsed] > 0");
-                        });
-                });
-
-            modelBuilder.Entity("POS.Shared.Entities.ProductionLotMaterialOrigin", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ProductionLotMaterialDetailId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("Quantity")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("ReceptionDetailId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReceptionDetailId");
-
-                    b.HasIndex("ProductionLotMaterialDetailId", "ReceptionDetailId")
-                        .IsUnique();
-
-                    b.ToTable("ORIGEN_MATERIA_PRIMA_LOTE", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_ORIGEN_MATERIA_PRIMA_LOTE_Cantidad", "[Quantity] > 0");
                         });
                 });
 
@@ -840,25 +813,6 @@ namespace POS.Server.Migrations
                     b.Navigation("RawMaterial");
                 });
 
-            modelBuilder.Entity("POS.Shared.Entities.ProductionLotMaterialOrigin", b =>
-                {
-                    b.HasOne("POS.Shared.Entities.ProductionLotMaterialDetail", "ProductionLotMaterialDetail")
-                        .WithMany("Origins")
-                        .HasForeignKey("ProductionLotMaterialDetailId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("POS.Shared.Entities.ReceptionDetail", "ReceptionDetail")
-                        .WithMany("ProductionOrigins")
-                        .HasForeignKey("ReceptionDetailId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ProductionLotMaterialDetail");
-
-                    b.Navigation("ReceptionDetail");
-                });
-
             modelBuilder.Entity("POS.Shared.Entities.Reception", b =>
                 {
                     b.HasOne("POS.Shared.Entities.Supplier", "Supplier")
@@ -978,11 +932,6 @@ namespace POS.Server.Migrations
                     b.Navigation("DispatchDetails");
                 });
 
-            modelBuilder.Entity("POS.Shared.Entities.ProductionLotMaterialDetail", b =>
-                {
-                    b.Navigation("Origins");
-                });
-
             modelBuilder.Entity("POS.Shared.Entities.RawMaterial", b =>
                 {
                     b.Navigation("ProductionLotDetails");
@@ -993,11 +942,6 @@ namespace POS.Server.Migrations
             modelBuilder.Entity("POS.Shared.Entities.Reception", b =>
                 {
                     b.Navigation("Details");
-                });
-
-            modelBuilder.Entity("POS.Shared.Entities.ReceptionDetail", b =>
-                {
-                    b.Navigation("ProductionOrigins");
                 });
 
             modelBuilder.Entity("POS.Shared.Entities.RoleEntity", b =>

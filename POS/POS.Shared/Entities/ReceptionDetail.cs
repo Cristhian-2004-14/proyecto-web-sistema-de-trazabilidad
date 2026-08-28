@@ -10,4 +10,5 @@ public class ReceptionDetail
     public int RawMaterialId { get; set; }
     public RawMaterial? RawMaterial { get; set; }
     [Column(TypeName = "decimal(18,2)")] public decimal Quantity { get; set; }
+    public ICollection<ProductionLotMaterialOrigin> ProductionOrigins { get; set; } = new List<ProductionLotMaterialOrigin>();
 }

@@ -56,10 +56,39 @@ public class ProductionLotService(AppDbContext db) : IProductionLotService
             if (item.Quantity > material.CurrentStock) throw new BusinessValidationException($"Stock insuficiente para {material.Name}.");
         }
 
+        var receptionDetails = await db.ReceptionDetails
+            .Include(x => x.Reception).ThenInclude(x => x!.Supplier)
+            .Include(x => x.Reception).ThenInclude(x => x!.User)
+            .Include(x => x.ProductionOrigins)
+            .Where(x => ids.Contains(x.RawMaterialId) && x.Reception!.Status == ReceptionStatuses.Confirmed)
+            .OrderBy(x => x.Reception!.Date).ThenBy(x => x.Id)
+            .ToListAsync();
+        foreach (var item in request.Items)
+        {
+            var traceableAvailable = receptionDetails.Where(x => x.RawMaterialId == item.RawMaterialId)
+                .Sum(x => x.Quantity - x.ProductionOrigins.Sum(o => o.Quantity));
+            if (traceableAvailable < item.Quantity)
+                throw new BusinessValidationException($"La materia prima {materials[item.RawMaterialId].Name} tiene stock físico, pero no suficiente stock asociado a recepciones confirmadas. Registre una recepción para mantener la trazabilidad.");
+        }
+
         await using var transaction = await db.Database.BeginTransactionAsync();
         try
         {
-            lot.Details = request.Items.Select(x => new ProductionLotMaterialDetail { RawMaterialId = x.RawMaterialId, QuantityUsed = x.Quantity }).ToList();
+            lot.Details = request.Items.Select(item =>
+            {
+                var remaining = item.Quantity;
+                var detail = new ProductionLotMaterialDetail { RawMaterialId = item.RawMaterialId, QuantityUsed = item.Quantity };
+                foreach (var source in receptionDetails.Where(x => x.RawMaterialId == item.RawMaterialId))
+                {
+                    var available = source.Quantity - source.ProductionOrigins.Sum(x => x.Quantity);
+                    if (available <= 0) continue;
+                    var assigned = Math.Min(remaining, available);
+                    detail.Origins.Add(new ProductionLotMaterialOrigin { ReceptionDetailId = source.Id, Quantity = assigned });
+                    remaining -= assigned;
+                    if (remaining == 0) break;
+                }
+                return detail;
+            }).ToList();
             await db.SaveChangesAsync();
             foreach (var item in request.Items) materials[item.RawMaterialId].CurrentStock -= item.Quantity;
             lot.Status = ProductionLotStatuses.InProgress;
@@ -110,7 +139,10 @@ public class ProductionLotService(AppDbContext db) : IProductionLotService
     }
 
     private IQueryable<ProductionLot> Query() => db.ProductionLots.Include(x => x.Product).Include(x => x.User)
-        .Include(x => x.Details).ThenInclude(x => x.RawMaterial);
+        .Include(x => x.Details).ThenInclude(x => x.RawMaterial)
+        .Include(x => x.Details).ThenInclude(x => x.Origins).ThenInclude(x => x.ReceptionDetail).ThenInclude(x => x!.Reception).ThenInclude(x => x!.Supplier)
+        .Include(x => x.Details).ThenInclude(x => x.Origins).ThenInclude(x => x.ReceptionDetail).ThenInclude(x => x!.Reception).ThenInclude(x => x!.User)
+        .Include(x => x.DispatchDetails).ThenInclude(x => x.Dispatch);
 
     private static ProductionLotResponse Map(ProductionLot x) => new()
     {
@@ -118,8 +150,21 @@ public class ProductionLotService(AppDbContext db) : IProductionLotService
         ProductUnitOfMeasure = x.Product?.UnitOfMeasure ?? string.Empty, UserId = x.UserId,
         Username = x.User?.Username ?? string.Empty, Code = x.Code, StartDate = x.StartDate,
         EndDate = x.EndDate, PlannedQuantity = x.PlannedQuantity, ProducedQuantity = x.ProducedQuantity,
+        DispatchedQuantity = x.DispatchDetails.Where(d => d.Dispatch?.Status == DispatchStatuses.Confirmed).Sum(d => d.Quantity),
         Status = x.Status, Materials = x.Details.Select(d => new ProductionLotMaterialResponse
         { Id = d.Id, RawMaterialId = d.RawMaterialId, RawMaterialName = d.RawMaterial?.Name ?? string.Empty,
-          UnitOfMeasure = d.RawMaterial?.UnitOfMeasure ?? string.Empty, QuantityUsed = d.QuantityUsed }).ToList()
+          UnitOfMeasure = d.RawMaterial?.UnitOfMeasure ?? string.Empty, QuantityUsed = d.QuantityUsed,
+          Origins = d.Origins.Select(o => new ProductionLotMaterialOriginResponse
+          {
+              ReceptionId = o.ReceptionDetail?.ReceptionId ?? 0, ReceptionDetailId = o.ReceptionDetailId,
+              ReceptionDate = o.ReceptionDetail?.Reception?.Date ?? default,
+              SupplierId = o.ReceptionDetail?.Reception?.SupplierId ?? 0,
+              SupplierName = o.ReceptionDetail?.Reception?.Supplier?.Name ?? string.Empty,
+              SupplierNit = o.ReceptionDetail?.Reception?.Supplier?.Nit ?? string.Empty,
+              ReceivedByUserId = o.ReceptionDetail?.Reception?.UserId ?? 0,
+              ReceivedByUsername = o.ReceptionDetail?.Reception?.User?.Username ?? string.Empty,
+              ReceivedByFullName = $"{o.ReceptionDetail?.Reception?.User?.Name} {o.ReceptionDetail?.Reception?.User?.LastName}".Trim(),
+              Quantity = o.Quantity
+          }).ToList() }).ToList()
     };
 }

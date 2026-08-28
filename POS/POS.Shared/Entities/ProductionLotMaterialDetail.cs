@@ -10,4 +10,5 @@ public class ProductionLotMaterialDetail
     public int RawMaterialId { get; set; }
     public RawMaterial? RawMaterial { get; set; }
     [Column(TypeName = "decimal(18,2)")] public decimal QuantityUsed { get; set; }
+    public ICollection<ProductionLotMaterialOrigin> Origins { get; set; } = new List<ProductionLotMaterialOrigin>();
 }

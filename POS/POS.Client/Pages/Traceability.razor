@@ -1,6 +1,54 @@
 @page "/traceability"
 @attribute [Authorize(Roles="Administrador,Almacén,Producción,Gerencia")]
 @inject HttpClient Http
-<PageTitle>Trazabilidad | Palma Verde</PageTitle><header class="page-heading"><div><p class="eyebrow">Consulta global</p><h1>Trazabilidad de lotes</h1><p>Busque un lote por su código exacto.</p></div></header><div class="trace-search"><input class="form-control" placeholder="Ej. LP-2026-001" @bind="code"/><button class="btn btn-primary" @onclick="Search">Buscar</button></div>@if(error!=""){<div class="alert alert-danger">@error</div>}
-@if(result is not null){<div class="lot-summary"><div><small>Producto</small><strong>@result.Lot.ProductName</strong></div><div><small>Estado</small><strong>@result.Lot.Status</strong></div><div><small>Responsable</small><strong>@result.Lot.Username</strong></div></div><section class="data-panel mb-3"><table class="table"><thead><tr><th>Código</th><th>Inicio</th><th>Fin</th><th>Planificado</th><th>Producido</th></tr></thead><tbody><tr><td>@result.Lot.Code</td><td>@result.Lot.StartDate.ToString("dd/MM/yyyy")</td><td>@(result.Lot.EndDate?.ToString("dd/MM/yyyy")??"—")</td><td>@result.Lot.PlannedQuantity</td><td>@result.Lot.ProducedQuantity</td></tr></tbody></table></section><h2>Materias primas utilizadas</h2><section class="data-panel mb-3"><table class="table"><tbody>@foreach(var m in result.Lot.Materials){<tr><td>@m.RawMaterialName</td><td>@m.QuantityUsed.ToString("N2") @m.UnitOfMeasure</td></tr>}</tbody></table></section><div class="alert alert-warning">@result.ReceptionOriginLimitation</div><h2>Movimientos relacionados</h2><section class="data-panel"><table class="table"><tbody>@foreach(var m in result.Movements){<tr><td>@m.Date.ToString("dd/MM/yyyy HH:mm")</td><td>@m.MovementType</td><td>+@m.Quantity.ToString("N2")</td><td>@m.Reference</td></tr>}</tbody></table></section>}
-@code{string code="",error="";LotTraceabilityResponse?result;async Task Search(){error="";result=null;if(string.IsNullOrWhiteSpace(code)){error="Ingrese un código.";return;}var r=await Http.GetAsync("api/traceability/lots/"+Uri.EscapeDataString(code.Trim()));if(r.IsSuccessStatusCode)result=await r.Content.ReadFromJsonAsync<LotTraceabilityResponse>();else error=r.StatusCode==System.Net.HttpStatusCode.NotFound?"No se encontró el lote.":"No fue posible consultar.";}}
+
+<PageTitle>Trazabilidad | Palma Verde</PageTitle>
+<header class="page-heading">
+    <div><p class="eyebrow">Seguimiento de extremo a extremo</p><h1>Trazabilidad de lotes</h1><p>Consulte responsables, producción, insumos, movimientos y destinos del lote.</p></div>
+</header>
+<div class="trace-search"><input class="form-control" placeholder="Ej. LP-2026-001" @bind="code"/><button class="btn btn-primary" @onclick="Search">Buscar</button></div>
+@if(error!=""){<div class="alert alert-danger">@error</div>}
+
+@if(result is not null)
+{
+    <div class="lot-summary">
+        <div><small>Lote</small><strong>@result.Lot.Code</strong></div>
+        <div><small>Producto</small><strong>@result.Lot.ProductName</strong></div>
+        <div><small>Estado</small><strong>@result.Lot.Status</strong></div>
+    </div>
+
+    <h2>Orden y ejecución de producción</h2>
+    <section class="data-panel mb-3">
+        <table class="table"><tbody>
+            <tr><th>Orden registrada por</th><td>@result.ProductionOrderedBy.FullName (@result.ProductionOrderedBy.Username)</td><th>Rol</th><td>@result.ProductionOrderedBy.Role</td></tr>
+            <tr><th>Inicio</th><td>@result.Lot.StartDate.ToString("dd/MM/yyyy HH:mm")</td><th>Finalización</th><td>@(result.Lot.EndDate?.ToString("dd/MM/yyyy HH:mm")??"Pendiente")</td></tr>
+            <tr><th>Planificado</th><td>@result.Lot.PlannedQuantity.ToString("N2") @result.Lot.ProductUnitOfMeasure</td><th>Producido</th><td>@result.Lot.ProducedQuantity.ToString("N2") @result.Lot.ProductUnitOfMeasure</td></tr>
+            <tr><th>Despachado</th><td>@result.Lot.DispatchedQuantity.ToString("N2") @result.Lot.ProductUnitOfMeasure</td><th>Disponible del lote</th><td><strong>@result.Lot.AvailableQuantity.ToString("N2") @result.Lot.ProductUnitOfMeasure</strong></td></tr>
+        </tbody></table>
+    </section>
+
+    <h2>Materias primas utilizadas</h2>
+    <section class="data-panel mb-3"><table class="table"><thead><tr><th>Materia prima</th><th>Cantidad consumida</th><th>Proveedor y recepción de origen</th><th>Recibido por</th></tr></thead><tbody>
+        @if(result.Lot.Materials.Count==0){<tr><td colspan="4" class="muted">Todavía no se registró consumo.</td></tr>}
+        @foreach(var material in result.Lot.Materials){<tr><td><strong>@material.RawMaterialName</strong></td><td>@material.QuantityUsed.ToString("N2") @material.UnitOfMeasure</td><td>@if(material.Origins.Count==0){<span class="muted">Sin origen histórico</span>}else{@foreach(var origin in material.Origins){<div><strong>@origin.SupplierName</strong> · recepción #@origin.ReceptionId del @origin.ReceptionDate.ToString("dd/MM/yyyy") · @origin.Quantity.ToString("N2") @material.UnitOfMeasure<br/><small>NIT @origin.SupplierNit</small></div>}}</td><td>@foreach(var origin in material.Origins){<div>@origin.ReceivedByFullName (@origin.ReceivedByUsername)</div>}</td></tr>}
+    </tbody></table></section>
+    @if(result.HasUntracedMaterialOrigins){<div class="alert alert-warning">@result.ReceptionOriginLimitation</div>}
+
+    <h2>Destinos del lote</h2>
+    <section class="data-panel mb-3"><table class="table"><thead><tr><th>Despacho</th><th>Fecha</th><th>Destino</th><th>Cantidad</th><th>Responsable</th><th>Estado</th><th>Observación</th></tr></thead><tbody>
+        @if(result.Dispatches.Count==0){<tr><td colspan="7" class="muted">Este lote todavía no tiene despachos vinculados.</td></tr>}
+        @foreach(var dispatch in result.Dispatches){<tr><td>#@dispatch.DispatchId</td><td>@dispatch.Date.ToString("dd/MM/yyyy HH:mm")</td><td><strong>@dispatch.Destination</strong></td><td>@dispatch.Quantity.ToString("N2") @result.Lot.ProductUnitOfMeasure</td><td>@dispatch.ResponsibleFullName (@dispatch.Username)</td><td><span class="status-chip">@dispatch.Status</span></td><td>@(string.IsNullOrWhiteSpace(dispatch.Observation)?"—":dispatch.Observation)</td></tr>}
+    </tbody></table></section>
+
+    <h2>Cronología de movimientos</h2>
+    <section class="data-panel"><table class="table"><thead><tr><th>Fecha</th><th>Movimiento</th><th>Cantidad</th><th>Responsable</th><th>Referencia</th></tr></thead><tbody>
+        @if(result.Movements.Count==0){<tr><td colspan="5" class="muted">No existen movimientos registrados.</td></tr>}
+        @foreach(var movement in result.Movements){<tr><td>@movement.Date.ToString("dd/MM/yyyy HH:mm")</td><td>@movement.MovementType</td><td>@movement.Quantity.ToString("N2") @result.Lot.ProductUnitOfMeasure</td><td>@movement.Username</td><td>@movement.Reference</td></tr>}
+    </tbody></table></section>
+}
+
+@code {
+    string code="",error="";
+    LotTraceabilityResponse? result;
+    async Task Search(){error="";result=null;if(string.IsNullOrWhiteSpace(code)){error="Ingrese un código.";return;}var response=await Http.GetAsync("api/traceability/lots/"+Uri.EscapeDataString(code.Trim()));if(response.IsSuccessStatusCode)result=await response.Content.ReadFromJsonAsync<LotTraceabilityResponse>();else error=response.StatusCode==System.Net.HttpStatusCode.NotFound?"No se encontró el lote.":"No fue posible consultar.";}
+}

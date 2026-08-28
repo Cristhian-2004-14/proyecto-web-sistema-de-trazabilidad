@@ -14,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<InventoryProduct> InventoryProducts => Set<InventoryProduct>();
     public DbSet<ProductionLot> ProductionLots => Set<ProductionLot>();
     public DbSet<ProductionLotMaterialDetail> ProductionLotMaterialDetails => Set<ProductionLotMaterialDetail>();
+    public DbSet<ProductionLotMaterialOrigin> ProductionLotMaterialOrigins => Set<ProductionLotMaterialOrigin>();
     public DbSet<Dispatch> Dispatches => Set<Dispatch>();
     public DbSet<DispatchDetail> DispatchDetails => Set<DispatchDetail>();
     public DbSet<InventoryMovement> InventoryMovements => Set<InventoryMovement>();
@@ -112,6 +113,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.HasOne(x => x.RawMaterial).WithMany(x => x.ProductionLotDetails).HasForeignKey(x => x.RawMaterialId).OnDelete(DeleteBehavior.Restrict);
             entity.ToTable(t => t.HasCheckConstraint("CK_DETALLE_LOTE_MP_Cantidad", "[QuantityUsed] > 0"));
         });
+        modelBuilder.Entity<ProductionLotMaterialOrigin>(entity =>
+        {
+            entity.ToTable("ORIGEN_MATERIA_PRIMA_LOTE");
+            entity.Property(x => x.Quantity).HasColumnType("decimal(18,2)");
+            entity.HasIndex(x => new { x.ProductionLotMaterialDetailId, x.ReceptionDetailId }).IsUnique();
+            entity.HasOne(x => x.ProductionLotMaterialDetail).WithMany(x => x.Origins).HasForeignKey(x => x.ProductionLotMaterialDetailId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.ReceptionDetail).WithMany(x => x.ProductionOrigins).HasForeignKey(x => x.ReceptionDetailId).OnDelete(DeleteBehavior.Restrict);
+            entity.ToTable(t => t.HasCheckConstraint("CK_ORIGEN_MATERIA_PRIMA_LOTE_Cantidad", "[Quantity] > 0"));
+        });
         modelBuilder.Entity<Dispatch>(entity =>
         {
             entity.ToTable("DESPACHO"); entity.Property(x=>x.Destination).HasMaxLength(150).IsRequired(); entity.Property(x=>x.Observation).HasMaxLength(300); entity.Property(x=>x.Status).HasMaxLength(30).IsRequired();
@@ -122,6 +132,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.ToTable("DETALLE_DESPACHO"); entity.Property(x=>x.Quantity).HasColumnType("decimal(18,2)"); entity.HasIndex(x=>new{x.DispatchId,x.ProductId}).IsUnique();
             entity.HasOne(x=>x.Dispatch).WithMany(x=>x.Details).HasForeignKey(x=>x.DispatchId).OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(x=>x.Product).WithMany(x=>x.DispatchDetails).HasForeignKey(x=>x.ProductId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x=>x.ProductionLot).WithMany(x=>x.DispatchDetails).HasForeignKey(x=>x.ProductionLotId).OnDelete(DeleteBehavior.Restrict);
             entity.ToTable(t=>t.HasCheckConstraint("CK_DETALLE_DESPACHO_Cantidad","[Quantity] > 0"));
         });
         modelBuilder.Entity<InventoryMovement>(entity =>

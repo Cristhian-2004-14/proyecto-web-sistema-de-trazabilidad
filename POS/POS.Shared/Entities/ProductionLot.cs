@@ -24,4 +24,5 @@ public class ProductionLot
     [Column(TypeName = "decimal(18,2)")] public decimal ProducedQuantity { get; set; }
     [Required, MaxLength(30)] public string Status { get; set; } = ProductionLotStatuses.Pending;
     public ICollection<ProductionLotMaterialDetail> Details { get; set; } = new List<ProductionLotMaterialDetail>();
+    public ICollection<DispatchDetail> DispatchDetails { get; set; } = new List<DispatchDetail>();
 }

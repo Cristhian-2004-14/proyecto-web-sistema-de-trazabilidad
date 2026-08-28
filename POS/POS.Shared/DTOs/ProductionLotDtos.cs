@@ -39,6 +39,21 @@ public class ProductionLotMaterialResponse
     public string RawMaterialName { get; set; } = string.Empty;
     public string UnitOfMeasure { get; set; } = string.Empty;
     public decimal QuantityUsed { get; set; }
+    public List<ProductionLotMaterialOriginResponse> Origins { get; set; } = [];
+}
+
+public class ProductionLotMaterialOriginResponse
+{
+    public int ReceptionId { get; set; }
+    public int ReceptionDetailId { get; set; }
+    public DateTime ReceptionDate { get; set; }
+    public int SupplierId { get; set; }
+    public string SupplierName { get; set; } = string.Empty;
+    public string SupplierNit { get; set; } = string.Empty;
+    public int ReceivedByUserId { get; set; }
+    public string ReceivedByUsername { get; set; } = string.Empty;
+    public string ReceivedByFullName { get; set; } = string.Empty;
+    public decimal Quantity { get; set; }
 }
 
 public class ProductionLotResponse
@@ -54,6 +69,8 @@ public class ProductionLotResponse
     public DateTime? EndDate { get; set; }
     public decimal PlannedQuantity { get; set; }
     public decimal ProducedQuantity { get; set; }
+    public decimal DispatchedQuantity { get; set; }
+    public decimal AvailableQuantity => Math.Max(0, ProducedQuantity - DispatchedQuantity);
     public string Status { get; set; } = string.Empty;
     public List<ProductionLotMaterialResponse> Materials { get; set; } = [];
 }
