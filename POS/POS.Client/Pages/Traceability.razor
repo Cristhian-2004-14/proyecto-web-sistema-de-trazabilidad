@@ -21,7 +21,7 @@
     <section class="data-panel mb-3">
         <table class="table"><tbody>
             <tr><th>Orden registrada por</th><td>@result.ProductionOrderedBy.FullName (@result.ProductionOrderedBy.Username)</td><th>Rol</th><td>@result.ProductionOrderedBy.Role</td></tr>
-            <tr><th>Inicio</th><td>@result.Lot.StartDate.ToString("dd/MM/yyyy HH:mm")</td><th>Finalización</th><td>@(result.Lot.EndDate?.ToString("dd/MM/yyyy HH:mm")??"Pendiente")</td></tr>
+            <tr><th>Fecha programada</th><td>@result.Lot.StartDate.ToString("dd/MM/yyyy")</td><th>Finalización</th><td>@(result.Lot.EndDate?.ToString("dd/MM/yyyy HH:mm")??"Pendiente")</td></tr>
             <tr><th>Planificado</th><td>@result.Lot.PlannedQuantity.ToString("N2") @result.Lot.ProductUnitOfMeasure</td><th>Producido</th><td>@result.Lot.ProducedQuantity.ToString("N2") @result.Lot.ProductUnitOfMeasure</td></tr>
             <tr><th>Despachado</th><td>@result.Lot.DispatchedQuantity.ToString("N2") @result.Lot.ProductUnitOfMeasure</td><th>Disponible del lote</th><td><strong>@result.Lot.AvailableQuantity.ToString("N2") @result.Lot.ProductUnitOfMeasure</strong></td></tr>
         </tbody></table>

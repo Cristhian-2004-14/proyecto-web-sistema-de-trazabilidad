@@ -21,7 +21,8 @@ public class ProductionLotService(AppDbContext db) : IProductionLotService
         await ValidateUserAsync(authenticatedUserId);
         if (request.ProductId <= 0) throw new BusinessValidationException("El producto es obligatorio.");
         if (string.IsNullOrWhiteSpace(request.Code)) throw new BusinessValidationException("El código de lote es obligatorio.");
-        if (request.StartDate == default) throw new BusinessValidationException("La fecha de inicio es obligatoria.");
+        if (request.StartDate == default) throw new BusinessValidationException("La fecha programada es obligatoria.");
+        if (request.StartDate.Date < DateTime.Today) throw new BusinessValidationException("La fecha programada no puede estar en el pasado.");
         if (request.PlannedQuantity <= 0) throw new BusinessValidationException("La cantidad planificada debe ser mayor que cero.");
         var code = request.Code.Trim();
         if (await db.ProductionLots.AnyAsync(x => x.Code == code)) throw new BusinessValidationException("El código de lote ya existe.");
@@ -106,6 +107,8 @@ public class ProductionLotService(AppDbContext db) : IProductionLotService
         if (lot is null) return null;
         if (lot.Status == ProductionLotStatuses.InProgress || lot.Status == ProductionLotStatuses.Finished)
             return await GetByIdAsync(id);
+        if (lot.StartDate.Date > DateTime.Today)
+            throw new BusinessValidationException($"Esta producción está programada para el {lot.StartDate:dd/MM/yyyy} y todavía no puede iniciarse.");
         var recipe = await db.ProductRecipeItems.AsNoTracking().Include(x => x.RawMaterial)
             .Where(x => x.ProductId == lot.ProductId).ToListAsync();
         if (recipe.Count == 0) throw new BusinessValidationException("El producto no tiene una receta configurada.");

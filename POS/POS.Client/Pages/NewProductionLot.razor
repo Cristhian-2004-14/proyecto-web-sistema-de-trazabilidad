@@ -2,19 +2,19 @@
 @attribute [Authorize(Roles = "Administrador,Producción")]
 @inject HttpClient Http
 @inject NavigationManager Navigation
-<PageTitle>Nuevo lote | Palma Verde</PageTitle>
-<header class="page-heading"><div><p class="eyebrow">Planificación</p><h1>Nuevo lote</h1><p>Crear el lote no modifica existencias.</p></div><a class="btn btn-light" href="production-lots">Volver</a></header>
+<PageTitle>Nueva orden de producción | Palma Verde</PageTitle>
+<header class="page-heading"><div><p class="eyebrow">Etapa 1 · Planificación</p><h1>Nueva orden de producción</h1><p>Programa la producción. Guardar la orden todavía no modifica existencias.</p></div><a class="btn btn-light" href="production-lots">Volver</a></header>
 @if(!string.IsNullOrWhiteSpace(error)){<div class="alert alert-danger">@error</div>}
 <div class="reception-layout"><section class="form-panel reception-form"><EditForm Model="model" OnValidSubmit="Save"><DataAnnotationsValidator/><ValidationSummary/>
 <div class="field"><label>Producto</label><InputSelect class="form-select" @bind-Value="model.ProductId"><option value="0">Seleccionar producto</option>@foreach(var x in products.Where(x=>x.IsActive)){<option value="@x.Id">@x.Name (@x.UnitOfMeasure)</option>}</InputSelect></div>
-<div class="form-row"><div class="field"><label>Código de lote</label><InputText class="form-control" @bind-Value="model.Code"/></div><div class="field"><label>Fecha de inicio</label><InputDate class="form-control" @bind-Value="model.StartDate"/></div></div>
+<div class="form-row"><div class="field"><label>Código de orden o lote</label><InputText class="form-control" @bind-Value="model.Code"/></div><div class="field"><label>Fecha programada</label><input class="form-control" type="date" min="@DateTime.Today.ToString("yyyy-MM-dd")" @bind="model.StartDate" @bind:format="yyyy-MM-dd"/></div></div>
 <div class="field"><label>Unidades planificadas</label><input class="form-control" type="number" min="1" step="1" @bind="model.PlannedQuantity"/><small>Solo se permiten números enteros.</small></div>
-<button class="btn btn-primary" disabled="@saving">@(saving?"Registrando...":"Crear lote")</button>
+<button class="btn btn-primary" disabled="@saving">@(saving?"Registrando...":"Guardar orden")</button>
 </EditForm></section></div>
 @code {
  CreateProductionLotRequest model=new(){StartDate=DateTime.Today}; List<ProductResponse> products=[]; string error=""; bool saving;
  protected override async Task OnInitializedAsync()=>products=await Http.GetFromJsonAsync<List<ProductResponse>>("api/products")??[];
- async Task Save(){saving=true;error="";var response=await Http.PostAsJsonAsync("api/production-lots",model);saving=false;if(response.IsSuccessStatusCode){var created=await response.Content.ReadFromJsonAsync<ProductionLotResponse>();Navigation.NavigateTo($"production-lots/{created!.Id}");return;}await SetError(response,"No fue posible crear el lote.");}
+ async Task Save(){saving=true;error="";var response=await Http.PostAsJsonAsync("api/production-lots",model);saving=false;if(response.IsSuccessStatusCode){Navigation.NavigateTo("production-lots?created=true");return;}await SetError(response,"No fue posible crear la orden de producción.");}
  async Task SetError(HttpResponseMessage response,string fallback){try{error=(await response.Content.ReadFromJsonAsync<ApiError>())?.Message??fallback;}catch{error=fallback;}}
  sealed class ApiError{public string Message{get;set;}="";}
 }

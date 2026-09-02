@@ -21,3 +21,8 @@ POS.rar
 
 # Copia local antigua de la solución; la versión oficial está en POS/
 POS_2/
+
+# Archivos temporales generados al renderizar presentaciones
+.codex-slides/
+*.pptx.inspect.ndjson
+/Presentacion_Introduccion_Palma_Verde/

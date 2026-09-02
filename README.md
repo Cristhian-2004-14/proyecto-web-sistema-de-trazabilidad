@@ -108,7 +108,7 @@ dotnet test POS\POS.Tests\POS.Tests.csproj
 
 Las pruebas cubren login válido, contraseña incorrecta, cuenta inactiva, rol inactivo, rechazo de asignación de roles inactivos, hash seguro al registrar y ausencia de `PasswordHash` en la respuesta pública de usuarios.
 
-Sprint 2 agrega pruebas de recepción e inventario. Sprint 3 agrega pruebas de lotes, consumo, finalización e idempotencia. Sprint 4 agrega 23 pruebas de despachos, movimientos, trazabilidad, reportes, rollback y permisos. El total actual es **56 pruebas**.
+Sprint 2 agrega pruebas de recepción e inventario. Sprint 3 agrega pruebas de órdenes programadas, recetarios, consumo automático, finalización e idempotencia. Sprint 4 agrega pruebas de despachos, movimientos, trazabilidad, reportes, rollback y permisos. El total actual es **64 pruebas**.
 
 ## Sprint 4
 
@@ -123,10 +123,23 @@ Un despacho confirmado registra cabecera, detalles, descuento de producto y movi
 
 - `GET/POST /api/production-lots`
 - `GET /api/production-lots/{id}`
+- `POST /api/production-lots/{id}/start`
 - `POST /api/production-lots/{id}/consume`
 - `POST /api/production-lots/{id}/finish`
 
-Iniciar sesión como `produccion`, abrir **Producción → Nuevo lote**, seleccionar un producto activo y registrar código, fecha y cantidad planificada. En el detalle, agregar materias primas sin superar su stock y confirmar el consumo; el inventario de materia prima disminuye en una transacción. Después ingresar la cantidad producida y finalizar; el stock del producto aumenta una sola vez. Administrador puede ejecutar las mismas operaciones; Almacén y Gerencia solo consultan.
+Iniciar sesión como `produccion` y crear una orden con producto, código, fecha programada y unidades enteras. Al guardar se vuelve al listado. Seleccionar la orden para iniciar la producción: el sistema calcula el recetario y descuenta automáticamente las materias primas. Seleccionarla nuevamente para registrar las unidades realmente producidas y finalizarla. Las órdenes futuras no pueden iniciarse antes de su fecha programada. Administrador puede ejecutar las mismas operaciones; Almacén y Gerencia solo consultan.
+
+## Carga ampliada de datos demo
+
+El servidor agrega automáticamente materias primas, productos, recetas y una recepción confirmada para pruebas. La carga es idempotente y no duplica registros al reiniciar.
+
+También puede ejecutarse manualmente el script `scripts/seed_demo_production.sql` después de aplicar las migraciones:
+
+```powershell
+sqlcmd -S "(localdb)\PalmaVerdeLocalDB" -d PalmaVerdeDb -E -b -i "scripts\seed_demo_production.sql"
+```
+
+El script requiere que ya existan un proveedor activo y el usuario demo `almacen`.
 
 ## API y prueba manual de Sprint 2
 
@@ -147,7 +160,7 @@ Para probar, iniciar sesión como `almacen`, abrir **Recepciones → Nueva recep
 - La entidad `MOVIMIENTO_INVENTARIO` se mantendrá vinculada a `PRODUCTO`, tal como exige el modelo académico.
 - La anulación de recepciones confirmadas no forma parte de Sprint 2; se evita implementar una reversión parcial. Se abordará únicamente cuando el flujo histórico esté definido.
 - Cada lote admite un único consumo confirmado. Una solicitud repetida devuelve el lote sin volver a descontar stock; un lote finalizado tampoco vuelve a incrementar producto.
-- La trazabilidad implementada identifica lote, producto, materias primas consumidas y movimientos del producto terminado. El modelo no vincula cada consumo con una recepción específica, por lo que no se afirma trazabilidad exacta proveedor → recepción → lote.
+- La trazabilidad identifica lote, producto, materias primas consumidas, recepción y proveedor de origen, además de los movimientos del producto terminado.
 - La exportación CSV/PDF/Excel queda como mejora futura; los reportes priorizan visualización en pantalla.
 
 El análisis del proyecto base, el mapeo de entidades y el plan de archivos están en `docs/ANALISIS_Y_PLAN_SPRINT1.md`.

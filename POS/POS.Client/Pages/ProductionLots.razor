@@ -2,9 +2,19 @@
 @attribute [Authorize(Roles = "Administrador,Almacén,Producción,Gerencia")]
 @inject HttpClient Http
 <PageTitle>Lotes de producción | Palma Verde</PageTitle>
-<header class="page-heading"><div><p class="eyebrow">Sprint 3 · Producción</p><h1>Lotes de producción</h1><p>Producción planificada, consumos y producto terminado.</p></div><AuthorizeView Roles="Administrador,Producción"><Authorized><a class="btn btn-primary" href="production-lots/new">Nuevo lote</a></Authorized></AuthorizeView></header>
-<section class="data-panel"><table class="table"><thead><tr><th>Código</th><th>Producto</th><th>Fecha</th><th>Planificado</th><th>Producido</th><th>Estado</th><th>Responsable</th><th></th></tr></thead><tbody>
+<header class="page-heading"><div><p class="eyebrow">Flujo de producción</p><h1>Órdenes de producción</h1><p>Cada orden avanza por separado: planificación, inicio y finalización.</p></div><AuthorizeView Roles="Administrador,Producción"><Authorized><a class="btn btn-primary" href="production-lots/new">Nueva orden</a></Authorized></AuthorizeView></header>
+@if(Created){<div class="alert alert-success">Orden guardada. Selecciónala cuando quieras iniciar la producción.</div>}
+@if(Started){<div class="alert alert-success">Producción iniciada y materias primas descontadas. Selecciona nuevamente la orden para finalizarla.</div>}
+@if(Finished){<div class="alert alert-success">Producción finalizada y existencias del producto actualizadas.</div>}
+<section class="data-panel"><table class="table"><thead><tr><th>Código</th><th>Producto</th><th>Fecha programada</th><th>Planificado</th><th>Producido</th><th>Etapa</th><th>Responsable</th><th></th></tr></thead><tbody>
 @if(items.Count==0){<tr><td colspan="8" class="muted">No existen lotes registrados.</td></tr>}
-@foreach(var x in items){<tr><td><strong>@x.Code</strong></td><td>@x.ProductName</td><td>@x.StartDate.ToString("dd/MM/yyyy")</td><td>@x.PlannedQuantity</td><td>@x.ProducedQuantity</td><td><span class="status-chip">@x.Status</span></td><td>@x.Username</td><td><a class="btn-link-action" href="production-lots/@x.Id">Ver detalle</a></td></tr>}
+@foreach(var x in items){<tr><td><strong>@x.Code</strong></td><td>@x.ProductName</td><td>@x.StartDate.ToString("dd/MM/yyyy")</td><td>@x.PlannedQuantity</td><td>@x.ProducedQuantity</td><td><span class="status-chip">@Stage(x.Status)</span></td><td>@x.Username</td><td><a class="btn-link-action" href="production-lots/@x.Id">@(x.Status==ProductionLotStatuses.Finished?"Consultar":"Continuar")</a></td></tr>}
 </tbody></table></section>
-@code { List<ProductionLotResponse> items=[]; protected override async Task OnInitializedAsync()=>items=await Http.GetFromJsonAsync<List<ProductionLotResponse>>("api/production-lots")??[]; }
+@code {
+ [Parameter, SupplyParameterFromQuery] public bool Created {get;set;}
+ [Parameter, SupplyParameterFromQuery] public bool Started {get;set;}
+ [Parameter, SupplyParameterFromQuery] public bool Finished {get;set;}
+ List<ProductionLotResponse> items=[];
+ protected override async Task OnInitializedAsync()=>items=await Http.GetFromJsonAsync<List<ProductionLotResponse>>("api/production-lots")??[];
+ static string Stage(string status)=>status switch{ProductionLotStatuses.Pending=>"1 · Planificada",ProductionLotStatuses.InProgress=>"2 · En proceso",ProductionLotStatuses.Finished=>"3 · Finalizada",_=>status};
+}
