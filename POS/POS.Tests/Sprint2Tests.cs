@@ -82,7 +82,11 @@ public class Sprint2Tests
     {
         await using var fixture=await DbFixture.CreateAsync();
         var controller=new ProductsController(fixture.Db);
-        var result=await controller.Post(new ProductRequest{Name="Palmito entero",UnitOfMeasure="unidad",CurrentStock=0,MinimumStock=100,IsActive=true});
+        var result=await controller.Post(new ProductRequest
+        {
+            Name="Palmito entero", UnitOfMeasure="unidad", CurrentStock=0, MinimumStock=100, IsActive=true,
+            Recipe=[new ProductRecipeItemRequest { RawMaterialId=fixture.Material.Id, QuantityPerUnit=1.25m }]
+        });
         Assert.IsType<CreatedAtActionResult>(result.Result); Assert.Equal(1,await fixture.Db.InventoryProducts.CountAsync());
     }
 

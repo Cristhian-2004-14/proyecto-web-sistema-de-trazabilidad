@@ -12,6 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Reception> Receptions => Set<Reception>();
     public DbSet<ReceptionDetail> ReceptionDetails => Set<ReceptionDetail>();
     public DbSet<InventoryProduct> InventoryProducts => Set<InventoryProduct>();
+    public DbSet<ProductRecipeItem> ProductRecipeItems => Set<ProductRecipeItem>();
     public DbSet<ProductionLot> ProductionLots => Set<ProductionLot>();
     public DbSet<ProductionLotMaterialDetail> ProductionLotMaterialDetails => Set<ProductionLotMaterialDetail>();
     public DbSet<ProductionLotMaterialOrigin> ProductionLotMaterialOrigins => Set<ProductionLotMaterialOrigin>();
@@ -80,13 +81,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.Name).HasMaxLength(120).IsRequired();
             entity.Property(e => e.Description).HasMaxLength(250);
             entity.Property(e => e.UnitOfMeasure).HasMaxLength(30).IsRequired();
-            entity.Property(e => e.CurrentStock).HasColumnType("decimal(18,2)");
-            entity.Property(e => e.MinimumStock).HasColumnType("decimal(18,2)");
             entity.ToTable(t =>
             {
                 t.HasCheckConstraint("CK_PRODUCTO_StockActual", "[CurrentStock] >= 0");
                 t.HasCheckConstraint("CK_PRODUCTO_StockMinimo", "[MinimumStock] >= 0");
             });
+        });
+        modelBuilder.Entity<ProductRecipeItem>(entity =>
+        {
+            entity.ToTable("RECETA_PRODUCTO");
+            entity.Property(x => x.QuantityPerUnit).HasColumnType("decimal(18,4)");
+            entity.HasIndex(x => new { x.ProductId, x.RawMaterialId }).IsUnique();
+            entity.HasOne(x => x.Product).WithMany(x => x.Recipe).HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.RawMaterial).WithMany(x => x.ProductRecipes).HasForeignKey(x => x.RawMaterialId).OnDelete(DeleteBehavior.Restrict);
+            entity.ToTable(t => t.HasCheckConstraint("CK_RECETA_PRODUCTO_Cantidad", "[QuantityPerUnit] > 0"));
         });
         modelBuilder.Entity<ProductionLot>(entity =>
         {
@@ -94,8 +102,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.HasIndex(x => x.Code).IsUnique();
             entity.Property(x => x.Code).HasMaxLength(50).IsRequired();
             entity.Property(x => x.Status).HasMaxLength(30).IsRequired();
-            entity.Property(x => x.PlannedQuantity).HasColumnType("decimal(18,2)");
-            entity.Property(x => x.ProducedQuantity).HasColumnType("decimal(18,2)");
             entity.HasOne(x => x.Product).WithMany(x => x.ProductionLots).HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.User).WithMany(x => x.ProductionLots).HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
             entity.ToTable(t =>
@@ -129,7 +135,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         });
         modelBuilder.Entity<DispatchDetail>(entity =>
         {
-            entity.ToTable("DETALLE_DESPACHO"); entity.Property(x=>x.Quantity).HasColumnType("decimal(18,2)"); entity.HasIndex(x=>new{x.DispatchId,x.ProductId}).IsUnique();
+            entity.ToTable("DETALLE_DESPACHO"); entity.HasIndex(x=>new{x.DispatchId,x.ProductId}).IsUnique();
             entity.HasOne(x=>x.Dispatch).WithMany(x=>x.Details).HasForeignKey(x=>x.DispatchId).OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(x=>x.Product).WithMany(x=>x.DispatchDetails).HasForeignKey(x=>x.ProductId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x=>x.ProductionLot).WithMany(x=>x.DispatchDetails).HasForeignKey(x=>x.ProductionLotId).OnDelete(DeleteBehavior.Restrict);

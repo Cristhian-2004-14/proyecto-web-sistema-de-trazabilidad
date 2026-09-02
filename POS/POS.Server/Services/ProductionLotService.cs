@@ -99,6 +99,29 @@ public class ProductionLotService(AppDbContext db) : IProductionLotService
         catch { await transaction.RollbackAsync(); throw; }
     }
 
+    public async Task<ProductionLotResponse?> StartAsync(int id, int authenticatedUserId)
+    {
+        await ValidateUserAsync(authenticatedUserId);
+        var lot = await db.ProductionLots.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        if (lot is null) return null;
+        if (lot.Status == ProductionLotStatuses.InProgress || lot.Status == ProductionLotStatuses.Finished)
+            return await GetByIdAsync(id);
+        var recipe = await db.ProductRecipeItems.AsNoTracking().Include(x => x.RawMaterial)
+            .Where(x => x.ProductId == lot.ProductId).ToListAsync();
+        if (recipe.Count == 0) throw new BusinessValidationException("El producto no tiene una receta configurada.");
+        if (recipe.Any(x => x.RawMaterial is null || !x.RawMaterial.IsActive))
+            throw new BusinessValidationException("La receta contiene una materia prima inexistente o inactiva.");
+        var request = new MaterialConsumptionRequest
+        {
+            Items = recipe.Select(x => new MaterialConsumptionItemRequest
+            {
+                RawMaterialId = x.RawMaterialId,
+                Quantity = x.QuantityPerUnit * lot.PlannedQuantity
+            }).ToList()
+        };
+        return await ConsumeAsync(id, request, authenticatedUserId);
+    }
+
     public async Task<ProductionLotResponse?> FinishAsync(int id, FinishProductionLotRequest request, int authenticatedUserId)
     {
         await ValidateUserAsync(authenticatedUserId);
@@ -106,7 +129,7 @@ public class ProductionLotService(AppDbContext db) : IProductionLotService
         if (lot is null) return null;
         if (lot.Status == ProductionLotStatuses.Finished) return Map(lot);
         if (lot.Status != ProductionLotStatuses.InProgress) throw new BusinessValidationException("Solo un lote en proceso puede finalizarse.");
-        if (request.ProducedQuantity <= 0) throw new BusinessValidationException("La cantidad producida debe ser mayor que cero.");
+        if (request.ProducedQuantity <= 0) throw new BusinessValidationException("La cantidad producida debe ser un número entero mayor que cero.");
         if (lot.Product is null || !lot.Product.IsActive) throw new BusinessValidationException("El producto no existe o está inactivo.");
 
         await using var transaction = await db.Database.BeginTransactionAsync();

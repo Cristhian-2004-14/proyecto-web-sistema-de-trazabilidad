@@ -8,7 +8,7 @@
 <div class="reception-layout"><section class="form-panel reception-form"><EditForm Model="model" OnValidSubmit="Save"><DataAnnotationsValidator/><ValidationSummary/>
 <div class="field"><label>Producto</label><InputSelect class="form-select" @bind-Value="model.ProductId"><option value="0">Seleccionar producto</option>@foreach(var x in products.Where(x=>x.IsActive)){<option value="@x.Id">@x.Name (@x.UnitOfMeasure)</option>}</InputSelect></div>
 <div class="form-row"><div class="field"><label>Código de lote</label><InputText class="form-control" @bind-Value="model.Code"/></div><div class="field"><label>Fecha de inicio</label><InputDate class="form-control" @bind-Value="model.StartDate"/></div></div>
-<div class="field"><label>Cantidad planificada</label><InputNumber class="form-control" @bind-Value="model.PlannedQuantity"/></div>
+<div class="field"><label>Unidades planificadas</label><input class="form-control" type="number" min="1" step="1" @bind="model.PlannedQuantity"/><small>Solo se permiten números enteros.</small></div>
 <button class="btn btn-primary" disabled="@saving">@(saving?"Registrando...":"Crear lote")</button>
 </EditForm></section></div>
 @code {

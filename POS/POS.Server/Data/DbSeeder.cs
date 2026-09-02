@@ -38,5 +38,14 @@ public static class DbSeeder
         if (!await db.InventoryProducts.AnyAsync()) db.InventoryProducts.Add(
             new InventoryProduct { Name = "Palmito entero", Description = "Producto terminado demo para Sprint 2", UnitOfMeasure = "unidad", CurrentStock = 0, MinimumStock = 100, IsActive = true });
         await db.SaveChangesAsync();
+        if (!await db.ProductRecipeItems.AnyAsync())
+        {
+            var product = await db.InventoryProducts.OrderBy(x => x.Id).FirstAsync();
+            var materials = await db.RawMaterials.OrderBy(x => x.Id).ToListAsync();
+            if (materials.Count > 0) db.ProductRecipeItems.Add(new ProductRecipeItem { ProductId=product.Id, RawMaterialId=materials[0].Id, QuantityPerUnit=1.25m });
+            if (materials.Count > 1) db.ProductRecipeItems.Add(new ProductRecipeItem { ProductId=product.Id, RawMaterialId=materials[1].Id, QuantityPerUnit=1m });
+            if (materials.Count > 2) db.ProductRecipeItems.Add(new ProductRecipeItem { ProductId=product.Id, RawMaterialId=materials[2].Id, QuantityPerUnit=1m });
+            await db.SaveChangesAsync();
+        }
     }
 }

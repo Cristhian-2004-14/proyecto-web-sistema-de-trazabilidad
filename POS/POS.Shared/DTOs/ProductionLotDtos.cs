@@ -7,7 +7,7 @@ public class CreateProductionLotRequest
     [Range(1, int.MaxValue)] public int ProductId { get; set; }
     [Required, MaxLength(50)] public string Code { get; set; } = string.Empty;
     public DateTime StartDate { get; set; } = DateTime.Today;
-    [Range(0.01, double.MaxValue)] public decimal PlannedQuantity { get; set; }
+    [Range(1, int.MaxValue)] public int PlannedQuantity { get; set; }
 }
 
 public class MaterialConsumptionItemRequest
@@ -29,7 +29,7 @@ public class MaterialConsumptionRequest : IValidatableObject
 
 public class FinishProductionLotRequest
 {
-    [Range(0.01, double.MaxValue)] public decimal ProducedQuantity { get; set; }
+    [Range(1, int.MaxValue)] public int ProducedQuantity { get; set; }
 }
 
 public class ProductionLotMaterialResponse
@@ -67,10 +67,10 @@ public class ProductionLotResponse
     public string Code { get; set; } = string.Empty;
     public DateTime StartDate { get; set; }
     public DateTime? EndDate { get; set; }
-    public decimal PlannedQuantity { get; set; }
-    public decimal ProducedQuantity { get; set; }
-    public decimal DispatchedQuantity { get; set; }
-    public decimal AvailableQuantity => Math.Max(0, ProducedQuantity - DispatchedQuantity);
+    public int PlannedQuantity { get; set; }
+    public int ProducedQuantity { get; set; }
+    public int DispatchedQuantity { get; set; }
+    public int AvailableQuantity => Math.Max(0, ProducedQuantity - DispatchedQuantity);
     public string Status { get; set; } = string.Empty;
     public List<ProductionLotMaterialResponse> Materials { get; set; } = [];
 }

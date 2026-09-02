@@ -5,6 +5,6 @@
 <header class="page-heading"><div><p class="eyebrow">Sprint 3 · Producción</p><h1>Lotes de producción</h1><p>Producción planificada, consumos y producto terminado.</p></div><AuthorizeView Roles="Administrador,Producción"><Authorized><a class="btn btn-primary" href="production-lots/new">Nuevo lote</a></Authorized></AuthorizeView></header>
 <section class="data-panel"><table class="table"><thead><tr><th>Código</th><th>Producto</th><th>Fecha</th><th>Planificado</th><th>Producido</th><th>Estado</th><th>Responsable</th><th></th></tr></thead><tbody>
 @if(items.Count==0){<tr><td colspan="8" class="muted">No existen lotes registrados.</td></tr>}
-@foreach(var x in items){<tr><td><strong>@x.Code</strong></td><td>@x.ProductName</td><td>@x.StartDate.ToString("dd/MM/yyyy")</td><td>@x.PlannedQuantity.ToString("N2")</td><td>@x.ProducedQuantity.ToString("N2")</td><td><span class="status-chip">@x.Status</span></td><td>@x.Username</td><td><a class="btn-link-action" href="production-lots/@x.Id">Ver detalle</a></td></tr>}
+@foreach(var x in items){<tr><td><strong>@x.Code</strong></td><td>@x.ProductName</td><td>@x.StartDate.ToString("dd/MM/yyyy")</td><td>@x.PlannedQuantity</td><td>@x.ProducedQuantity</td><td><span class="status-chip">@x.Status</span></td><td>@x.Username</td><td><a class="btn-link-action" href="production-lots/@x.Id">Ver detalle</a></td></tr>}
 </tbody></table></section>
 @code { List<ProductionLotResponse> items=[]; protected override async Task OnInitializedAsync()=>items=await Http.GetFromJsonAsync<List<ProductionLotResponse>>("api/production-lots")??[]; }

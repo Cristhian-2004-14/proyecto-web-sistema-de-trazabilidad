@@ -27,6 +27,13 @@ public class ProductionLotsController(IProductionLotService service) : Controlle
         try { return (await service.ConsumeAsync(id, request, userId)) is { } result ? Ok(result) : NotFound(); }
         catch (BusinessValidationException ex) { return BadRequest(new { message = ex.Message }); }
     }
+    [HttpPost("{id:int}/start"), Authorize(Roles = "Administrador,Producción")]
+    public async Task<ActionResult<ProductionLotResponse>> Start(int id)
+    {
+        if (!TryGetUserId(out var userId)) return Unauthorized();
+        try { return (await service.StartAsync(id, userId)) is { } result ? Ok(result) : NotFound(); }
+        catch (BusinessValidationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
     [HttpPost("{id:int}/finish"), Authorize(Roles = "Administrador,Producción")]
     public async Task<ActionResult<ProductionLotResponse>> Finish(int id, FinishProductionLotRequest request)
     {

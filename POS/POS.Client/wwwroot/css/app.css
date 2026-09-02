@@ -41,6 +41,14 @@
   .logout{position:static;width:100%;margin-top:auto;justify-content:center;padding:.65rem}
   .logout-icon{width:auto}
 }
+
+.workspace-grid.single-column{grid-template-columns:minmax(0,1fr)}
+.modal-backdrop-custom{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:1.25rem;background:rgba(9,31,22,.68);backdrop-filter:blur(3px)}
+.modal-card-custom{width:min(680px,100%);max-height:calc(100vh - 2.5rem);overflow-y:auto;background:var(--white);border:1px solid var(--line);border-radius:20px;padding:1.75rem;box-shadow:0 28px 90px rgba(9,31,22,.35)}
+.modal-header-custom{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.35rem;padding-bottom:1rem;border-bottom:1px solid var(--line)}
+.modal-header-custom h2{font-size:2rem;margin:.15rem 0 0}.modal-header-custom .eyebrow{margin:0}
+.modal-close-custom{width:40px;height:40px;flex:0 0 40px;border:0;border-radius:50%;background:#edf3ef;color:var(--forest);font-size:1.75rem;line-height:1;cursor:pointer}
+.modal-close-custom:hover{background:var(--forest);color:var(--white)}
 @media(max-width:600px){
   .app-shell{display:block}
   .sidebar{position:sticky;top:0;height:58px;min-height:58px;padding:.55rem .75rem;z-index:10;align-items:center}
@@ -56,4 +64,5 @@
   .topbar{height:58px}
   .inventory-filters{flex-direction:column}.inventory-filters .form-control,.inventory-filters .form-select{max-width:none}.detail-builder{grid-template-columns:1fr}
   .lot-summary{grid-template-columns:1fr}
+  .modal-backdrop-custom{padding:.65rem}.modal-card-custom{max-height:calc(100vh - 1.3rem);padding:1.15rem;border-radius:14px}.modal-header-custom h2{font-size:1.55rem}
 }

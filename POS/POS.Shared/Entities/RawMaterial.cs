@@ -13,4 +13,5 @@ public class RawMaterial
     public bool IsActive { get; set; } = true;
     public ICollection<ReceptionDetail> ReceptionDetails { get; set; } = new List<ReceptionDetail>();
     public ICollection<ProductionLotMaterialDetail> ProductionLotDetails { get; set; } = new List<ProductionLotMaterialDetail>();
+    public ICollection<ProductRecipeItem> ProductRecipes { get; set; } = new List<ProductRecipeItem>();
 }

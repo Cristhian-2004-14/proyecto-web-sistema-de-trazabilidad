@@ -20,8 +20,8 @@ public class ProductionLot
     [Required, MaxLength(50)] public string Code { get; set; } = string.Empty;
     public DateTime StartDate { get; set; }
     public DateTime? EndDate { get; set; }
-    [Column(TypeName = "decimal(18,2)")] public decimal PlannedQuantity { get; set; }
-    [Column(TypeName = "decimal(18,2)")] public decimal ProducedQuantity { get; set; }
+    public int PlannedQuantity { get; set; }
+    public int ProducedQuantity { get; set; }
     [Required, MaxLength(30)] public string Status { get; set; } = ProductionLotStatuses.Pending;
     public ICollection<ProductionLotMaterialDetail> Details { get; set; } = new List<ProductionLotMaterialDetail>();
     public ICollection<DispatchDetail> DispatchDetails { get; set; } = new List<DispatchDetail>();
